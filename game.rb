@@ -5,7 +5,6 @@ class TicTacToe < Gosu::Window
   def initialize
     super 500, 400, false
     self.caption = "Tic Tac Toe [a.k.a. Gato]"
-    @image = Gosu::Image.from_text self, "What!!!", Gosu.default_font_name, 100
     @board_image = Gosu::Image.new(self, "tic_bck_400x400.png", true)
     tic_tac_toe
     set_players
@@ -16,11 +15,12 @@ class TicTacToe < Gosu::Window
 
   def tic_tac_toe
     @tic_tac_doh = TicTacDoh::Game.new()
+    @tic_tac_doh.set_board_size(3)
   end
 
   def set_players
-    @tic_tac_doh.add_player(nickname: 'Player 1', mark: 'X')
-    @tic_tac_doh.add_player(nickname: 'Player 2', mark: 'O')
+    @tic_tac_doh.add_player(nickname: 'Player 1', mark: 'x')
+    @tic_tac_doh.add_player(nickname: 'Player 2', mark: 'o')
   end
 
   # def draw_grip
@@ -46,20 +46,20 @@ class TicTacToe < Gosu::Window
   #     {row: row, column: column}
   # end
 
-  def print_grid
-    max_digits = (@game.grid.size * @game.grid.size - 1).to_s.size
-    @game.grid.each do |row|
-      line = []
-      row.each do |cell|
-        if cell.is_a? Numeric
-          line << cell.to_s.rjust(max_digits, '0')
-        else
-          line << cell.to_s.center(max_digits)
-        end
-      end
-      puts line.join('|')
-    end
-  end
+  # def print_grid
+  #   max_digits = (@game.grid.size * @game.grid.size - 1).to_s.size
+  #   @game.grid.each do |row|
+  #     line = []
+  #     row.each do |cell|
+  #       if cell.is_a? Numeric
+  #         line << cell.to_s.rjust(max_digits, '0')
+  #       else
+  #         line << cell.to_s.center(max_digits)
+  #       end
+  #     end
+  #     puts line.join('|')
+  #   end
+  # end
 
   # def play
   #   match
@@ -93,7 +93,37 @@ class TicTacToe < Gosu::Window
   end
 
   def insert_mark
-    @xs << { image: Gosu::Image.new(self, "x.png", true), x: @x_x, y: @x_y } if @tic_tac_doh.who_is_next[:mark] == 'X'
+    if @tic_tac_doh.next_turn(position)
+      @xs << { image: Gosu::Image.new(self, "x.png", true), x: @x_x, y: @x_y } unless @tic_tac_doh.who_is_next[:mark] == 'x'
+      @os << { image: Gosu::Image.new(self, "o.png", true), x: @x_x, y: @x_y } unless @tic_tac_doh.who_is_next[:mark] == 'o'
+    end
+  end
+
+  def position
+    # 10  155 300
+    # 15  160 305
+    col = case @x_x
+          when 10
+            0
+          when 155
+            1
+          when 300
+            2
+          end
+    row = case @x_y
+          when 15
+            0
+          when 160
+            1
+          when 305
+            2
+          end
+    (row * 3) + col
+  end
+
+  def game_over_message
+    message = @tic_tac_doh.winner ? "#{@tic_tac_doh.winner[:nickname]} won" : "Draw"
+    @image = Gosu::Image.from_text(self, message, Gosu.default_font_name, 100)
   end
 
   def button_down id
@@ -106,12 +136,20 @@ class TicTacToe < Gosu::Window
   end
 
   def update
+    if @tic_tac_doh.game_over?
+      game_over_message
+    end
   end
 
   def draw
-    @image.draw 0, 0, 0
-    @board_image.draw 0, 0, 0
-    @x.draw @x_x, @x_y, 0
+    if @tic_tac_doh.game_over?
+      @image.draw 0, 0, 0 
+    else
+      @board_image.draw 0, 0, 0
+      @x.draw @x_x, @x_y, 0
+      @xs.each { |x| x[:image].draw x[:x], x[:y], 0 }
+      @os.each { |o| o[:image].draw o[:x], o[:y], 0 }
+    end
   end
 end
 
